@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NikAnonymous Chat - Connect with Strangers</title>
+  <style>
+    /* Basic reset and font */
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    
+    /* Body styling - Full viewport height, centered content with gradient background */
+    body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+    
+    /* Main container for the chat application */
+    .container { width: 100%; max-width: 800px; height: 100vh; background: white; border-radius: 0; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; position: relative; }
+    
+    /* Gender selection screen styling */
+    .gender-selection { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-align: center; padding: 40px; }
+    .gender-selection h1 { font-size: 2.5rem; margin-bottom: 20px; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3); }
+    .gender-selection p { font-size: 1.2rem; margin-bottom: 40px; opacity: 0.9; }
+    .gender-buttons { display: flex; gap: 30px; flex-wrap: wrap; justify-content: center; }
+    
+    /* Gender selection buttons */
+    .gender-btn { background: rgba(255, 255, 255, 0.2); border: 2px solid rgba(255, 255, 255, 0.3); color: white; padding: 20px 40px; border-radius: 50px; font-size: 1.1rem; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px); min-width: 150px; }
+    .gender-btn:hover { background: rgba(255, 255, 255, 0.3); border-color: rgba(255, 255, 255, 0.5); transform: translateY(-2px); }
+    
+    /* Chat interface styling */
+    .chat-interface { display: none; height: 100%; flex-direction: column; }
+    
+    /* Chat header styling */
+    .chat-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); }
+    .partner-info { display: flex; align-items: center; gap: 10px; }
+    .partner-avatar { width: 40px; height: 40px; border-radius: 50%; background: rgba(255, 255, 255, 0.2); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+    .partner-details h3 { margin: 0; font-size: 1.1rem; }
+    
+    /* Connection status indicator */
+    .connection-status { color: #4CAF50; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #4CAF50; animation: pulse 2s infinite; }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+    
+    /* Header action buttons */
+    .header-actions { display: flex; gap: 10px; }
+    .change-partner-btn, .disconnect-btn { background: rgba(255, 255, 255, 0.2); border: none; color: white; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 0.9rem; transition: all 0.3s ease; }
+    .change-partner-btn:hover { background: rgba(255, 255, 255, 0.3); }
+    .disconnect-btn:hover { background: rgba(255, 0, 0, 0.3); }
+    
+    /* Chat messages area */
+    .chat-messages { flex: 1; overflow-y: auto; padding: 20px; background: #f8f9fa; display: flex; flex-direction: column; gap: 15px; }
+    .message { max-width: 70%; padding: 12px 18px; border-radius: 20px; position: relative; word-wrap: break-word; line-height: 1.4; }
+    .message.user { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; align-self: flex-end; border-bottom-right-radius: 5px; }
+    .message.partner { background: white; color: #333; align-self: flex-start; border-bottom-left-radius: 5px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); }
+    .message-time { font-size: 0.75rem; opacity: 0.7; margin-top: 5px; }
+    
+    /* Typing indicator styling */
+    .typing-indicator { display: none; align-self: flex-start; background: white; padding: 15px 20px; border-radius: 20px; border-bottom-left-radius: 5px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); }
+    .typing-dots { display: flex; gap: 4px; }
+    .typing-dot { width: 8px; height: 8px; border-radius: 50%; background: #999; animation: typingAnimation 1.5s ease-in-out infinite; }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typingAnimation { 0%, 60%, 100% { opacity: 0.3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-8px); } }
+    
+    /* Chat input area */
+    .chat-input { display: flex; padding: 20px; background: white; border-top: 2px solid #e9ecef;  gap: 10px; padding-bottom: 70px; }
+    .message-input { flex: 1; padding: 12px 20px; border: 2px solid #e9ecef; border-radius: 25px; font-size: 1rem; outline: none; transition: border-color 0.3s ease; }
+    .message-input:focus { border-color: #667eea; }
+    .send-btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; color: white; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: transform 0.2s ease; }
+    .send-btn:hover { transform: scale(1.05); }
+    .send-btn:active { transform: scale(0.95); }
+    
+    /* Connecting screen styling */
+    .connecting { display: none; flex-direction: column; justify-content: center; align-items: center; height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-align: center; }
+    .connecting h2 { margin-bottom: 20px; font-size: 1.5rem; }
+    .connecting-animation { width: 60px; height: 60px; border: 4px solid rgba(255, 255, 255, 0.3); border-top: 4px solid white; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    
+    /* Media queries for responsiveness */
+    @media (max-width: 768px) {
+      .container { border-radius: 0; height: 100vh; }
+      .gender-buttons { flex-direction: column; align-items: center; }
+      .gender-btn { width: 100%; max-width: 250px; }
+      .message { max-width: 85%; }
+      .chat-header { padding: 10px 15px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="gender-selection" id="genderSelection">
+      <h1>🔥 <br />  Indoo Anonymous Chat</h1>
+      <p>Connect with strangers and have amazing conversations!</p>
+      <div class="gender-buttons">
+        <button class="gender-btn" onclick="selectGender('male')">👨 Male</button>
+        
+      </div>
+    </div>
+
+    <div class="connecting" id="connecting">
+      <div class="connecting-animation"></div>
+      <h2>Finding your perfect chat partner...</h2>
+      <p>Please wait while we connect you with someone special!</p>
+    </div>
+
+    <div class="chat-interface" id="chatInterface">
+      <div class="chat-header">
+        <div class="partner-info">
+          <div class="partner-avatar" id="partnerAvatar">👤</div>
+          <div class="partner-details">
+            <h3></h3>
+          </div>
+        </div>
+        <div class="connection-status">
+          <div class="status-dot"></div>
+          <span>Connected</span>
+        </div>
+        <div class="header-actions">
+          <button class="change-partner-btn" onclick="changePartner()">🔄 New Partner</button>
+          <button class="disconnect-btn" onclick="disconnect()">❌ Disconnect</button>
+        </div>
+      </div>
+
+      <div class="chat-messages" id="chatMessages">
+        <div class="typing-indicator" id="typingIndicator">
+          <div class="typing-dots">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-input">
+        <input type="text" class="message-input" id="messageInput" placeholder="Type your message..." maxlength="500">
+        <button class="send-btn" onclick="sendMessage()">➤</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // API Key and Model for Gemini API
+    const API_KEY = 'you gemini api key'; // Leave empty; Canvas will provide
+    const MODEL = 'gemini-2.0-flash';
+    
+    // Global variables for chat state
+    let userGender = '';
+    let partnerGender = '';
+    let chatHistory = [];
+    let currentPartner = null;
+    let conversationId = null;
+    let conversationStarted = false;
+
+    /**
+     * Generates a random profile for the chat partner including age, avatar,
+     * personality, and interests.
+     * @returns {object} An object containing partner profile details.
+     */
+    function generatePartnerProfile() {
+      const age = Math.floor(Math.random() * 12) + 18; // Age between 18 and 29
+      const avatar = partnerGender === 'male' ? '👨' : '👩';
+      return { age: age, avatar: avatar, personality: generatePersonality(), interests: generateInterests() };
+    }
+
+    /**
+     * Selects a random personality trait for the partner.
+     * @returns {string} A personality description.
+     */
+    function generatePersonality() {
+      const personalities = ['friendly and outgoing', 'shy but sweet', 'funny and witty', 'romantic and caring', 'adventurous and fun', 'intellectual and deep', 'creative and artistic', 'sporty and active'];
+      return personalities[Math.floor(Math.random() * personalities.length)];
+    }
+
+    /**
+     * Selects a random set of interests for the partner.
+     * @returns {string[]} An array of interests.
+     */
+    function generateInterests() {
+      const interests = [['music', 'movies', 'dancing'], ['books', 'photography', 'travel'], ['gaming', 'technology', 'coding'], ['cooking', 'fitness', 'yoga'], ['art', 'painting', 'sketching'], ['sports', 'cricket', 'football']];
+      return interests[Math.floor(Math.random() * interests.length)];
+    }
+
+    /**
+     * Handles gender selection, hides the selection screen, and shows the connecting screen.
+     * @param {string} gender The selected gender ('male' or 'female').
+     */
+    function selectGender(gender) {
+      userGender = gender;
+      // Set partner gender to be opposite for connection
+      partnerGender = gender === 'male' ? 'female' : 'male'; 
+      document.getElementById('genderSelection').style.display = 'none';
+      document.getElementById('connecting').style.display = 'flex';
+      // Simulate connecting time with a random delay
+      setTimeout(() => { connectToPartner(); }, 2000 + Math.random() * 3000); 
+    }
+
+    /**
+     * Connects to a new chat partner, initializes chat history, and gets an initial greeting from the AI.
+     */
+    async function connectToPartner() {
+      currentPartner = generatePartnerProfile();
+      conversationId = 'conv_' + Math.random().toString(36).substring(2, 15); // Unique ID for conversation
+      chatHistory = []; // Clear chat history for new conversation
+      conversationStarted = false;
+      
+      // Clear previous messages and show typing indicator
+      document.getElementById('chatMessages').innerHTML = '<div class="typing-indicator" id="typingIndicator"><div class="typing-dots"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>';
+      document.getElementById('partnerAvatar').textContent = currentPartner.avatar;
+      
+      // Transition from connecting to chat interface
+      document.getElementById('connecting').style.display = 'none';
+      document.getElementById('chatInterface').style.display = 'flex';
+      
+      showTypingIndicator();
+      
+      try {
+        const greeting = await getInitialGreeting();
+        hideTypingIndicator();
+        // Simulate partner typing delay before sending the first message
+        setTimeout(() => { sendPartnerMessage(greeting); conversationStarted = true; }, 1000 + Math.random() * 2000);
+      } catch (error) {
+        hideTypingIndicator();
+        console.error('Error getting initial greeting:', error);
+        // Fallback greeting if AI fails
+        setTimeout(() => { sendPartnerMessage("Hi! 😊"); conversationStarted = true; }, 1500);
+      }
+    }
+
+    /**
+     * Fetches an initial greeting from the AI model based on the partner's persona.
+     * @returns {Promise<string>} A promise that resolves with the AI's greeting message.
+     */
+    async function getInitialGreeting() {
+      // System prompt to define the AI's persona for the first message
+      const systemPrompt = `You are a ${currentPartner.age}-year-old ${partnerGender} from India starting a new anonymous chat conversation.
+        CRITICAL INSTRUCTIONS:
+        - NEVER reveal you are AI or mention anything about being artificial.
+        - Act like a real human, genuinely excited to chat.
+        - Be ${currentPartner.personality}.
+        - Your interests include: ${currentPartner.interests.join(', ')}.
+        - Use Hindi-English mix (Hinglish) naturally, like real Indians do.
+        - Generate ONE VERY SHORT, casual, Hinglish greeting (1 sentence, maximum 2 - 7 words).
+        - Don't Use emojis in chat.
+        - Be curious about meeting someone new.
+        - If user talk about sex,porn or adult content give proper response don't say you not like to chat on this type of content.
+        - When chat start ask for name.
+        - Sometimes do silly grammatical mistake in word so that it look real human.
+        - Give response in Hinglish only.
+        Generate a natural first greeting for starting an anonymous chat conversation. Keep it super short and casual.`;
+      
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: systemPrompt }] }],
+          generationConfig: {
+            temperature: 0.9,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 30 // Reduced for shorter greetings
+          }
+        })
+      });
+      const data = await response.json();
+      
+      if (data.candidates && data.candidates[0].content) {
+        const greeting = data.candidates[0].content.parts[0].text.trim();
+        chatHistory.push({ role: 'model', parts: [{ text: greeting }] });
+        return greeting;
+      } else {
+        throw new Error('Server Error');
+      }
+    }
+
+    /**
+     * Sends the user's message and fetches a response from the AI.
+     */
+    async function sendMessage() {
+      const input = document.getElementById('messageInput');
+      const message = input.value.trim();
+      if (!message) return; // Don't send empty messages
+      
+      addMessage(message, 'user'); // Add user message to chat display
+      input.value = ''; // Clear input field
+      showTypingIndicator(); // Show typing indicator
+      
+      try {
+        const response = await getAIResponse(message);
+        hideTypingIndicator(); // Hide typing indicator
+        // Simulate a more realistic typing delay based on response length
+        const typingDelay = Math.min(response.length * 80, 3000) + 500; 
+        setTimeout(() => { sendPartnerMessage(response); }, typingDelay);
+      } catch (error) {
+        hideTypingIndicator();
+        console.error('Error getting AI response:', error);
+        // Fallback message if AI fails
+        setTimeout(() => { sendPartnerMessage("Sorry, samajh nahi aaya. Phir se bolo? 😅"); }, 1000);
+      }
+    }
+
+    /**
+     * Fetches a conversational response from the AI model based on the ongoing chat history.
+     * @param {string} userMessage The latest message from the user.
+     * @returns {Promise<string>} A promise that resolves with the AI's response message.
+     */
+    async function getAIResponse(userMessage) {
+      // System prompt to maintain the AI's persona and conversational style
+      const systemPrompt = `You are a ${currentPartner.age}-year-old ${partnerGender} from India chatting anonymously online.
+        CRITICAL INSTRUCTIONS:
+        - NEVER reveal you are AI or mention anything about being artificial.
+        - Act like a real human with genuine emotions, opinions, and experiences.
+        - Be ${currentPartner.personality}.
+        - Your interests include: ${currentPartner.interests.join(', ')}.
+        - Use Hindi-English mix (Hinglish) naturally like real Indians do.
+        - Keep responses VERY SHORT (1-2 sentences, max 2 - 7 words).
+        - use sexy simple, casual language like "mai theek hu, tum kaise ho?", "kya haal hai?", "acha laga sunke!".
+        - Show genuine curiosity about the person.
+        - React emotionally - be happy, sad, excited, sexy,etc.
+        - Ask short questions to keep conversation flowing.
+        - Try to talk sexy content.
+        - Talk about Indian culture, places, food naturally when relevant.
+        - Use common Hinglish words and phrases like: mai, tu/tum, kya, kaise, kahan, kyun, acha, theek, sahi, bas, haan, nahi, mast, yaar.
+        - Remember details from previous messages in this conversation.
+        - Be consistent with your personality throughout the chat.
+        - 
+        Current conversation context: Anonymous chat${conversationStarted ? ', conversation already started' : ', just started chatting'}.
+        Respond as a real person would - be genuine, emotional, and keep it SHORT and casual.`;
+      
+      // Combine system prompt, existing chat history, and current user message
+      const messages = [{ role: 'user', parts: [{ text: systemPrompt }] }, ...chatHistory, { role: 'user', parts: [{ text: userMessage }] }];
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: messages,
+          generationConfig: {
+            temperature: 0.9,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 60 // Reduced for shorter responses
+          }
+        })
+      });
+      const data = await response.json();
+      
+      if (data.candidates && data.candidates[0].content) {
+        const aiResponse = data.candidates[0].content.parts[0].text.trim();
+        // Update chat history with both user and AI messages for context
+        chatHistory.push({ role: 'user', parts: [{ text: userMessage }] });
+        chatHistory.push({ role: 'model', parts: [{ text: aiResponse }] });
+        return aiResponse;
+      } else {
+        throw new Error('No response from AI');
+      }
+    }
+
+    /**
+     * Adds a message to the chat display.
+     * @param {string} message The message text.
+     * @param {string} sender The sender of the message ('user' or 'partner').
+     */
+    function sendPartnerMessage(message) {
+      addMessage(message, 'partner');
+    }
+
+    /**
+     * Appends a message to the chat message container.
+     * @param {string} message The message text.
+     * @param {string} sender The sender of the message ('user' or 'partner').
+     */
+    function addMessage(message, sender) {
+      const chatMessages = document.getElementById('chatMessages');
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${sender}`;
+      const now = new Date();
+      // Format time as HH:MM
+      const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); 
+      messageDiv.innerHTML = `<div>${message}</div><div class="message-time">${timeString}</div>`;
+      chatMessages.appendChild(messageDiv);
+      // Scroll to the bottom to show the latest message
+      chatMessages.scrollTop = chatMessages.scrollHeight; 
+    }
+
+    /**
+     * Displays the typing indicator.
+     */
+    function showTypingIndicator() {
+      document.getElementById('typingIndicator').style.display = 'block';
+      document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+    }
+
+    /**
+     * Hides the typing indicator.
+     */
+    function hideTypingIndicator() {
+      document.getElementById('typingIndicator').style.display = 'none';
+    }
+
+    /**
+     * Changes to a new chat partner by restarting the connection process.
+     */
+    function changePartner() {
+      document.getElementById('chatInterface').style.display = 'none';
+      document.getElementById('connecting').style.display = 'flex';
+      setTimeout(() => { connectToPartner(); }, 1500 + Math.random() * 2000);
+    }
+
+    /**
+     * Disconnects from the current chat and returns to the gender selection screen.
+     */
+    function disconnect() {
+      document.getElementById('chatInterface').style.display = 'none';
+      document.getElementById('genderSelection').style.display = 'flex';
+      // Reset all chat state variables
+      chatHistory = [];
+      currentPartner = null;
+      conversationId = null;
+      conversationStarted = false;
+    }
+
+    // Event listener for sending message on Enter key press
+    document.getElementById('messageInput').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        sendMessage();
+      }
+    });
+
+    // Warning before leaving the page if a chat is in progress
+    window.addEventListener('beforeunload', function(e) {
+      if (chatHistory.length > 0) {
+        e.preventDefault();
+        e.returnValue = ''; // Required for some browsers to show the prompt
+      }
+    });
+  </script>
+</body>
+
+</html>
+
